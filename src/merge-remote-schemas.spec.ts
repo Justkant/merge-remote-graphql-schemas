@@ -1,9 +1,8 @@
-import { graphql } from "graphql";
-import gql from "graphql-tag";
-import { makeExecutableSchema, mergeSchemas } from "graphql-tools";
-import { printSchema } from "graphql/utilities";
-import "jasmine";
-import { mergeRemoteSchemas } from "./merge-remote-schemas";
+import { graphql } from 'graphql';
+import gql from 'graphql-tag';
+import { makeExecutableSchema, mergeSchemas } from 'graphql-tools';
+import { printSchema } from 'graphql/utilities';
+import { mergeRemoteSchemas } from './merge-remote-schemas';
 
 const combinedSchema = `type Bar {
   id: ID!
@@ -49,8 +48,7 @@ input UpdateFooInput {
 }
 `;
 
-describe("mergeRemoteSchemas", () => {
-
+describe('mergeRemoteSchemas', () => {
   const fooSchema = makeExecutableSchema({
     typeDefs: gql`
       type Query {
@@ -63,7 +61,7 @@ describe("mergeRemoteSchemas", () => {
       }
 
       input UpdateFooInput {
-        id: ID!,
+        id: ID!
         name: String!
       }
 
@@ -79,8 +77,8 @@ describe("mergeRemoteSchemas", () => {
     `,
     resolvers: {
       Query: {
-        foo: () => ({ id: "foo", name: "Name" }),
-        foos: () => [{ id: "foo", name: "Name" }],
+        foo: () => ({ id: 'foo', name: 'Name' }),
+        foos: () => [{ id: 'foo', name: 'Name' }],
       },
       Mutation: {
         updateFoo: (_, { input: { id, name } }) => ({ id, name }),
@@ -98,7 +96,7 @@ describe("mergeRemoteSchemas", () => {
       union Both = Foo | Bar
 
       interface Something {
-        id: ID!,
+        id: ID!
         bar: Bar!
       }
 
@@ -119,17 +117,17 @@ describe("mergeRemoteSchemas", () => {
     `,
     resolvers: {
       Query: {
-        bar: () => ({ id: "bar", foo: { id: "foo" }}),
-        foo: () => ({ id: "foo", bars: [{ id: "bar" }], a: "A" }),
+        bar: () => ({ id: 'bar', foo: { id: 'foo' } }),
+        foo: () => ({ id: 'foo', bars: [{ id: 'bar' }], a: 'A' }),
       },
       Foo: {
-        bars: () => [{ id: "bar" }],
-        a: () => "A",
+        bars: () => [{ id: 'bar' }],
+        a: () => 'A',
       },
     },
   });
 
-  it("should merge passed in schemas", () => {
+  it('should merge passed in schemas', () => {
     const independentBarSchema = makeExecutableSchema({
       typeDefs: gql`
         type Query {
@@ -142,79 +140,97 @@ describe("mergeRemoteSchemas", () => {
       `,
       resolvers: {
         Query: {
-          bar: () => ({ id: "bar" }),
+          bar: () => ({ id: 'bar' }),
         },
       },
     });
 
-    const mergedSchema = mergeRemoteSchemas({ schemas: [fooSchema, independentBarSchema ]});
-    expect(mergedSchema.toString()).toEqual(mergeSchemas({ schemas: [fooSchema, independentBarSchema]}).toString());
+    const mergedSchema = mergeRemoteSchemas({
+      schemas: [fooSchema, independentBarSchema],
+    });
+    expect(mergedSchema.toString()).toEqual(
+      mergeSchemas({ schemas: [fooSchema, independentBarSchema] }).toString(),
+    );
   });
 
-  it("should merge duplicate types", () => {
-
-    const mergedSchema = mergeRemoteSchemas({ schemas: [fooSchema, barSchema]});
+  it('should merge duplicate types', () => {
+    const mergedSchema = mergeRemoteSchemas({
+      schemas: [fooSchema, barSchema],
+    });
     expect(printSchema(mergedSchema)).toEqual(combinedSchema);
   });
 
-  it("should answer cross-schema queries", () => {
-
-    const mergedSchema = mergeRemoteSchemas({ schemas: [fooSchema, barSchema]});
-    graphql(mergedSchema, `
-      query {
-        bar(id: "bar") {
-          id
-          foo {
+  it('should answer cross-schema queries', () => {
+    const mergedSchema = mergeRemoteSchemas({
+      schemas: [fooSchema, barSchema],
+    });
+    graphql(
+      mergedSchema,
+      `
+        query {
+          bar(id: "bar") {
             id
-            name
-            bars {
+            foo {
               id
-            }
-            ... on FooA {
-              a
+              name
+              bars {
+                id
+              }
+              ... on FooA {
+                a
+              }
             }
           }
+          foos {
+            id
+          }
         }
-        foos {
-          id
-        }
-      }
-    `)
-      .then((result) => {
+      `,
+    )
+      .then(result => {
         expect(result).toEqual({
           data: {
             bar: {
-              id: "bar",
+              id: 'bar',
               foo: {
-                id: "foo",
-                name: "Name",
-                bars: [{ id: "bar" }],
-                a: "A",
+                id: 'foo',
+                name: 'Name',
+                bars: [{ id: 'bar' }],
+                a: 'A',
               },
             },
-            foos: [ { id: "foo" }],
+            foos: [{ id: 'foo' }],
           },
         });
       })
       .catch(() => fail());
   });
 
-  it("should perform mutations", () => {
-    const mergedSchema = mergeRemoteSchemas({ schemas: [barSchema], localSchema: fooSchema});
-    graphql(mergedSchema, `
-      mutation updateFoo($input: UpdateFooInput!) {
-        updateFoo(input: $input) {
-          id
-          name
+  it('should perform mutations', () => {
+    const mergedSchema = mergeRemoteSchemas({
+      schemas: [barSchema],
+      localSchema: fooSchema,
+    });
+    graphql(
+      mergedSchema,
+      `
+        mutation updateFoo($input: UpdateFooInput!) {
+          updateFoo(input: $input) {
+            id
+            name
+          }
         }
-      }
-    `, null, null, { input: { id: "foo", name: "something" } })
-      .then((result) => {
+      `,
+      null,
+      null,
+      { input: { id: 'foo', name: 'something' } },
+    )
+      .then(result => {
         expect(result).toEqual({
           data: {
             updateFoo: {
-              id: "foo",
-              name: "something",
+              id: 'foo',
+              name: 'something',
             },
           },
         });
